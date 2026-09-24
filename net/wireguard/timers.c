@@ -44,7 +44,7 @@ static void wg_expired_retransmit_handshake(struct timer_list *timer)
 					  timer_retransmit_handshake);
 
 	if (peer->timer_handshake_attempts > MAX_TIMER_HANDSHAKES) {
-		pr_debug("%s: Handshake for peer %llu (%pISpfsc) did not complete after %d attempts, giving up\n",
+		pr_debug("%s: Handshake for peer %llu (%pISpfsc) did not complete after %u attempts, giving up\n",
 			 peer->device->dev->name, peer->internal_id,
 			 &peer->endpoint.addr, MAX_TIMER_HANDSHAKES + 2);
 
