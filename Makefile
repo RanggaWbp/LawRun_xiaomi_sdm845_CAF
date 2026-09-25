@@ -368,6 +368,12 @@ CHECK		= sparse
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 NOSTDINC_FLAGS  =
+# gcc implicitly searches the compiling file's own directory for #include "x"
+# and even #include <x>; clang only does it for quoted includes. 58 CAF trace
+# headers use TRACE_INCLUDE_PATH . which relies on that gcc behaviour.
+ifeq ($(cc-name),clang)
+CLANG_FLAGS	+= $(patsubst %,-iquote $(srctree)/%, $(src))
+endif
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
