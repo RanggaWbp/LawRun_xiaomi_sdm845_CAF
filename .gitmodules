@@ -1,0 +1,12 @@
+[submodule "KernelSU"]
+	path = KernelSU
+	url = https://github.com/ReSukiSU/ReSukiSU.git
+[submodule "NoMount"]
+	path = NoMount
+	url = https://github.com/maxsteeel/nomount.git
+[submodule "Baseband-guard"]
+	path = Baseband-guard
+	url = https://github.com/vc-teahouse/Baseband-guard.git
+[submodule "Re-Kernel"]
+	path = Re-Kernel
+	url = https://github.com/Sakion-Team/Re-Kernel.git
