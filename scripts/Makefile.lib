@@ -161,15 +161,20 @@ __a_flags	= $(call flags,_a_flags)
 __cpp_flags     = $(call flags,_cpp_flags)
 endif
 
+# gcc implicitly searches the compiling file's own directory for #include "x"
+# and even #include <x>; clang only does it for quoted includes. CAF trace
+# headers using TRACE_INCLUDE_PATH . rely on that gcc behaviour.
+clang_self_include = $(if $(cc-name),$(if $(filter clang,$(cc-name)),-iquote $(srctree)/$(src)))
+
 c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
 		 $(__c_flags) $(modkern_cflags)                           \
-		 $(basename_flags) $(modname_flags)
+		 $(basename_flags) $(modname_flags) $(clang_self_include)
 
 a_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
-		 $(__a_flags) $(modkern_aflags)
+		 $(__a_flags) $(modkern_aflags) $(clang_self_include)
 
 cpp_flags      = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
-		 $(__cpp_flags)
+		 $(__cpp_flags) $(clang_self_include)
 
 ld_flags       = $(LDFLAGS) $(ldflags-y)
 
