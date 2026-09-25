@@ -13,8 +13,10 @@ permissions:
   contents: write
 
 env:
-  # Toolchain (CAF sdm845 friendly: clang + aarch64-linux-android-4.9 for CROSS_COMPILE)
-  CLANG_SOURCE: "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/LLVM-19.1.7-Linux-X64.tar.xz"
+  # Toolchain: AOSP clang is too new for this 4.9-era CAF tree (arm64 vdso asm,
+  # crypto inline asm). proton-clang 13 (ProtonAOSP) is the era-matched
+  # toolchain the NonGKI build guides use for 4.9 kernels.
+  CLANG_SOURCE: "https://github.com/kdrag0n/proton-clang/releases/download/20211214/proton-clang-20211214.tar.xz"
   GCC_64_SOURCE: "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9"
   GCC_64_BRANCH: "android12L-release"
   GCC_32_SOURCE: "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9"
@@ -95,7 +97,7 @@ jobs:
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
             CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
-            KCFLAGS="-w" 2>&1 | tee build.log
+            2>&1 | tee build.log
 
           # Any build failure must abort the whole run
           grep -E "Error [0-9]+|error:|fatal error" build.log && exit 1 || true
