@@ -40,5 +40,15 @@ PATCH_VBMETA_FLAG=auto;
 # boot install
 dump_boot;
 
+# cpio -o fallback (no mkbootfs in zip) drops device nodes; without /dev/console
+# init exits 1 -> "Attempted to kill init!" bootloop.
+if [ ! -e $RAMDISK/dev/console ]; then
+  mkdir -p $RAMDISK/dev;
+  mknod -m 600 $RAMDISK/dev/console c 5 1;
+  mknod -m 666 $RAMDISK/dev/null c 1 3;
+  mknod -m 666 $RAMDISK/dev/ptmx c 5 2;
+  mknod -m 660 $RAMDISK/dev/tty c 5 0;
+fi;
+
 write_boot;
 ## end boot install
