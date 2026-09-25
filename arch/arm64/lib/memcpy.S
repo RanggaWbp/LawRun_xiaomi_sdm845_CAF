@@ -70,7 +70,8 @@
 
 	.weak memcpy
 ENTRY(__memcpy)
-ENTRY(memcpy)
+	.weak memcpy ASM_NL
+	memcpy:
 #include "copy_template.S"
 	ret
 ENDPIPROC(memcpy)
