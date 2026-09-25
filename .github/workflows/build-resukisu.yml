@@ -184,11 +184,12 @@ jobs:
         id: date
         # Include a build counter so a same-day rebuild never clobbers the
         # previous release (resukisu-25-09-2026, resukisu-25-09-2026-r2, ...).
+        # gh CLI is absent on the runner, so probe the REST API instead.
         run: |
           BASE="resukisu-$(TZ=Asia/Jakarta date +'%d-%m-%Y')"
           TAG="$BASE"
           n=2
-          while gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; do
+          while curl -fsSL -o /dev/null "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG"; do
             TAG="$BASE-r$n"; n=$((n+1))
           done
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
