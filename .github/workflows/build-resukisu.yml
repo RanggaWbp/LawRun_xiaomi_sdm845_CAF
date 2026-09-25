@@ -33,12 +33,12 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - { device: beryllium, codename: beryllium, defconfig: beryllium_defconfig }
-          - { device: dipper,    codename: dipper,    defconfig: dipper_defconfig }
-          - { device: equuleus,  codename: equuleus,  defconfig: equuleus_defconfig }
-          - { device: perseus,   codename: perseus,   defconfig: perseus_defconfig }
-          - { device: polaris,   codename: polaris,   defconfig: polaris_defconfig }
-          - { device: ursa,      codename: ursa,      defconfig: ursa_defconfig }
+          - { device: beryllium, model: POCOPHONE F1,              kernel: ReBocchi, defconfig: beryllium_defconfig }
+          - { device: dipper,    model: Mi 8,                      kernel: ReBocchi, defconfig: dipper_defconfig }
+          - { device: equuleus,  model: Mi 8 Pro,                  kernel: ReBocchi, defconfig: equuleus_defconfig }
+          - { device: perseus,   model: Mi MIX 3,                  kernel: ReBocchi, defconfig: perseus_defconfig }
+          - { device: polaris,   model: Mi MIX 2S,                kernel: ReBocchi, defconfig: polaris_defconfig }
+          - { device: ursa,      model: Mi 8 Explorer Edition,     kernel: ReBocchi, defconfig: ursa_defconfig }
 
     steps:
       - name: Checkout kernel source (with submodules)
@@ -124,19 +124,19 @@ jobs:
         run: echo "DATE=$(TZ=Asia/Jakarta date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
 
       - name: Package with AnyKernel3
+        env:
+          AK3_DEVICE: ${{ matrix.device }}
+          AK3_MODEL: ${{ matrix.model }}
+          AK3_KERNEL: ${{ matrix.kernel }}
         run: |
           git clone --depth=1 "$AK3_SOURCE" $HOME/AnyKernel3
-          ZIP_NAME="${{ matrix.device }}-$(echo ${{ steps.date.outputs.DATE }} | tr -d '-').zip"
+          ZIP_NAME="ReSukiSU-susfs_${{ matrix.device }}-$(echo ${{ steps.date.outputs.DATE }} | tr -d '-').zip"
 
-          # AnyKernel3 config for sdm845 A/B devices
-          cat > $HOME/AnyKernel3/anykernel.sh <<'AK3'
-          kernel.string=ReBocchi sdm845
-          do.modules=0
-          do.systemless=0
-          do.cleanup=1
-          block=auto
-          is_slot_device=1
-          AK3
+          # AnyKernel3 template: keep the stock installer (dump_boot/write_boot,
+          # ak3-core.sh) intact and only swap in our properties block + boot vars.
+          # Overwriting the whole file (as we did before) deletes the flash logic
+          # — the zip installs but never actually writes the kernel.
+          cp -f .github/ak3-template/anykernel.sh $HOME/AnyKernel3/anykernel.sh
 
           mkdir -p $HOME/AnyKernel3/tmp
           # SDM845 Xiaomi needs the appended-dtb image (Image.gz-dtb); the separate
@@ -148,6 +148,11 @@ jobs:
           fi
           # DTB if produced
           [ -f arch/arm64/boot/dtb ] && cp -f arch/arm64/boot/dtb $HOME/AnyKernel3/ || true
+
+          # stamp kernel.string + device names into properties()
+          sed -i "s|__AK3_KERNEL_STRING__|$AK3_KERNEL (ReSukiSU v4.2.0-rc3-susfs) by RanggaWbp|" $HOME/AnyKernel3/anykernel.sh
+          sed -i "s|__AK3_DEVICE1__|$AK3_DEVICE|" $HOME/AnyKernel3/anykernel.sh
+          sed -i "s|__AK3_DEVICE2__|$AK3_MODEL|" $HOME/AnyKernel3/anykernel.sh
 
           cd $HOME/AnyKernel3
           zip -r9 "$GITHUB_WORKSPACE/$ZIP_NAME" . -x '*.git*' -x 'README*' || \
@@ -177,7 +182,16 @@ jobs:
 
       - name: Set release tag
         id: date
-        run: echo "TAG=resukisu-$(TZ=Asia/Jakarta date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+        # Include a build counter so a same-day rebuild never clobbers the
+        # previous release (resukisu-25-09-2026, resukisu-25-09-2026-r2, ...).
+        run: |
+          BASE="resukisu-$(TZ=Asia/Jakarta date +'%d-%m-%Y')"
+          TAG="$BASE"
+          n=2
+          while gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; do
+            TAG="$BASE-r$n"; n=$((n+1))
+          done
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
       - name: Verify all 6 zips present
         run: |
@@ -185,7 +199,7 @@ jobs:
           count=$(ls -1 *.zip | wc -l)
           if [ "$count" -ne 6 ]; then echo "Expected 6 zips, got $count"; exit 1; fi
           for d in beryllium dipper equuleus perseus polaris ursa; do
-            ls ${d}-*.zip >/dev/null 2>&1 || { echo "Missing zip for $d"; exit 1; }
+            ls ReSukiSU-susfs_${d}-*.zip >/dev/null 2>&1 || { echo "Missing zip for $d"; exit 1; }
           done
           echo "All 6 device zips present."
 
@@ -193,20 +207,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.date.outputs.TAG }}
-          name: ReBocchi SDM845 CAF - ${{ steps.date.outputs.TAG }}
+          name: ReSukiSU-susfs ${{ steps.date.outputs.TAG }} — ReBocchi SDM845 CAF
           body: |
-            ReSukiSU v4.2.0-rc3 (SUSFS inline hook) + NoMount + Baseband-guard + Re:Kernel
-            Kernel: Linux 4.9.337 (Xiaomi SDM845 CAF)
+            ReSukiSU v4.2.0-rc3-susfs (SUSFS inline hook) + NoMount + Baseband-guard + Re:Kernel
+            Kernel: Linux 4.9.337 (Xiaomi SDM845 CAF) — build by RanggaWbp
 
             Devices:
-            - beryllium (Poco F1)
-            - dipper (Mi 8)
-            - equuleus (Mi 8 Lite)
-            - perseus (Mi Max 3)
-            - polaris (Mi MIX 2S)
-            - ursa (Mi 8 Pro)
+            - beryllium → POCOPHONE F1
+            - dipper → Mi 8
+            - equuleus → Mi 8 Pro
+            - perseus → Mi MIX 3
+            - polaris → Mi MIX 2S
+            - ursa → Mi 8 Explorer Edition
 
-            Filename format: <device>-<DDMMYYYY>.zip
+            Install in TWRP: flash the zip for your device (AnyKernel3).
+            Filename format: ReSukiSU-susfs_<device>-<DDMMYYYY>.zip
           files: |
             *.zip
           make_latest: true
