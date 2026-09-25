@@ -31,12 +31,12 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - { device: beryllium, codename: beryllium }
-          - { device: dipper,    codename: dipper }
-          - { device: equuleus,  codename: equuleus }
-          - { device: perseus,   codename: perseus }
-          - { device: polaris,   codename: polaris }
-          - { device: ursa,      codename: ursa }
+          - { device: beryllium, codename: beryllium, defconfig: beryllium_defconfig }
+          - { device: dipper,    codename: dipper,    defconfig: dipper_defconfig }
+          - { device: equuleus,  codename: equuleus,  defconfig: equuleus_defconfig }
+          - { device: perseus,   codename: perseus,   defconfig: perseus_defconfig }
+          - { device: polaris,   codename: polaris,   defconfig: polaris_defconfig }
+          - { device: ursa,      codename: ursa,      defconfig: ursa_defconfig }
 
     steps:
       - name: Checkout kernel source (with submodules)
@@ -71,16 +71,14 @@ jobs:
       - name: Build kernel (${{ matrix.defconfig }})
         run: |
           export ARCH=$KERNEL_ARCH
-          export CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android-
-          export CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi-
-          export CC=clang
-          export LLVM_AR=llvm-ar LLVM_NM=llvm-nm LLVM_OBJCOPY=llvm-objcopy LLVM_OBJDUMP=llvm-objdump LLVM_READELF=llvm-readelf LLVM_STRIP=llvm-strip
-          # CAF sdm845 needs the androidkernel gcc binutils (recordmcount etc. handled by clang)
           export PATH=$HOME/gcc-64/bin:$HOME/clang/bin:$PATH
 
+          # CAF sdm845: CLANG_TRIPLE must be a GNU triple (see build.config.aarch64),
+          # CROSS_COMPILE supplies the aarch64-linux-android-4.9 binutils.
           make $MAKE_FLAGS \
             ARCH=$KERNEL_ARCH \
             CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
             CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
             ${{ matrix.defconfig }}
@@ -94,6 +92,7 @@ jobs:
           make $MAKE_FLAGS \
             ARCH=$KERNEL_ARCH \
             CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
             CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
             KCFLAGS="-w" 2>&1 | tee build.log
