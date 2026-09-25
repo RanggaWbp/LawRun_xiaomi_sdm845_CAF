@@ -164,7 +164,7 @@ endif
 # gcc implicitly searches the compiling file's own directory for #include "x"
 # and even #include <x>; clang only does it for quoted includes. CAF trace
 # headers using TRACE_INCLUDE_PATH . rely on that gcc behaviour.
-clang_self_include = $(if $(cc-name),$(if $(filter clang,$(cc-name)),-iquote $(srctree)/$(src)))
+clang_self_include = $(if $(cc-name),$(if $(filter clang,$(cc-name)),-I $(srctree)/$(src)))
 
 c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
 		 $(__c_flags) $(modkern_cflags)                           \
