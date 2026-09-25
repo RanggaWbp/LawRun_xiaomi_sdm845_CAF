@@ -11,7 +11,7 @@
  */
 
 #include <linux/module.h>
-#include <cam_sensor_cmn_header.h>
+#include "cam_sensor_cmn_header.h"
 #include "cam_sensor_core.h"
 #include "cam_sensor_util.h"
 #include "cam_soc_util.h"

@@ -12,8 +12,8 @@
 
 #include <linux/of.h>
 #include <linux/of_gpio.h>
-#include <cam_sensor_cmn_header.h>
-#include <cam_sensor_util.h>
+#include "cam_sensor_cmn_header.h"
+#include "cam_sensor_util.h"
 #include <cam_sensor_io.h>
 #include <cam_req_mgr_util.h>
 #include "cam_sensor_soc.h"

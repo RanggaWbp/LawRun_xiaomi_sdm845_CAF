@@ -29,7 +29,7 @@
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-subdev.h>
 #include <cam_cci_dev.h>
-#include <cam_sensor_cmn_header.h>
+#include "cam_sensor_cmn_header.h"
 #include <cam_subdev.h>
 #include "cam_sensor_util.h"
 #include "cam_soc_util.h"

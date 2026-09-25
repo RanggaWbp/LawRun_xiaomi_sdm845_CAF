@@ -44,7 +44,13 @@ jobs:
       - name: Checkout kernel source (with submodules)
         uses: actions/checkout@v4
         with:
+          # ReSukiSU's Kbuild resolves its version via `git describe` inside the
+          # submodule; it falls back to a hardcoded string when tags are absent.
+          fetch-depth: 0
           submodules: recursive
+
+      - name: Restore ReSukiSU submodule tags
+        run: git -C KernelSU fetch --tags --depth 1 origin "refs/tags/v4.2.0-rc3:refs/tags/v4.2.0-rc3"
 
       - name: Install dependencies
         run: |
