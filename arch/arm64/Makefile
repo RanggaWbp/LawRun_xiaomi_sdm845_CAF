@@ -82,7 +82,12 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
   endif
 endif
 
-KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(vdso32)
+KBUILD_CFLAGS	+= $(lseinstr) $(vdso32)
+# gcc-only: clang refuses NEON/asm regs under -mgeneral-regs-only (arm64 crypto
+# needs vector regs) and it is a no-op for gcc on arm64 anyway.
+ifneq ($(cc-name),clang)
+KBUILD_CFLAGS	+= -mgeneral-regs-only
+endif
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
 KBUILD_CFLAGS	+= -fno-pic
