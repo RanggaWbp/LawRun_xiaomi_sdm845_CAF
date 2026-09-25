@@ -56,8 +56,10 @@ jobs:
 
       - name: Set up clang
         run: |
-          mkdir -p $HOME/clang
-          wget -qO- "$CLANG_SOURCE" | tar -xJ -C $HOME/clang --strip-components=1
+          # kdrag0n/proton-clang is a continuously-updating *repo*, not release
+          # assets. clang-13 is era-matched to this 4.9 CAF tree; llvmorg-19
+          # breaks arm64 vdso asm and crypto inline asm.
+          git clone --depth 1 https://github.com/kdrag0n/proton-clang $HOME/clang
           echo "$HOME/clang/bin" >> $GITHUB_PATH
 
       - name: Set up GCC (aarch64-linux-android-4.9)
