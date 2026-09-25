@@ -386,13 +386,13 @@ alternative_endif
  * 	size:		size of the region
  * 	Corrupts:	kaddr, size, tmp1, tmp2
  */
-	.macro dcache_by_line_op op, domain, kaddr, size, tmp1, tmp2
+	.macro dcache_by_line_op op, domain, kaddr, size, tmp1, tmp2, clean=0
 	dcache_line_size \tmp1, \tmp2
 	add	\size, \kaddr, \size
 	sub	\tmp2, \tmp1, #1
 	bic	\kaddr, \kaddr, \tmp2
 9998:
-	.if	(\op == cvau || \op == cvac)
+	.if	\clean
 alternative_if_not ARM64_WORKAROUND_CLEAN_CACHE
 	dc	\op, \kaddr
 alternative_else

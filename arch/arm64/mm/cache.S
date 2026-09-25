@@ -163,7 +163,7 @@ ENDPROC(__flush_cache_user_range)
  *	- size    - size in question
  */
 ENTRY(__flush_dcache_area)
-	dcache_by_line_op civac, sy, x0, x1, x2, x3
+	dcache_by_line_op civac, sy, x0, x1, x2, x3, clean=0
 	ret
 ENDPIPROC(__flush_dcache_area)
 
@@ -177,7 +177,7 @@ ENDPIPROC(__flush_dcache_area)
  *	- size    - size in question
  */
 ENTRY(__clean_dcache_area_pou)
-	dcache_by_line_op cvau, ish, x0, x1, x2, x3
+	dcache_by_line_op cvau, ish, x0, x1, x2, x3, clean=1
 	ret
 ENDPROC(__clean_dcache_area_pou)
 
@@ -234,7 +234,7 @@ ENTRY(__clean_dcache_area_poc)
  *	- size    - size in question
  */
 ENTRY(__dma_clean_area)
-	dcache_by_line_op cvac, sy, x0, x1, x2, x3
+	dcache_by_line_op cvac, sy, x0, x1, x2, x3, clean=1
 	ret
 ENDPIPROC(__clean_dcache_area_poc)
 ENDPROC(__dma_clean_area)
@@ -248,7 +248,7 @@ ENDPROC(__dma_clean_area)
  *	- size    - size in question
  */
 ENTRY(__dma_flush_area)
-	dcache_by_line_op civac, sy, x0, x1, x2, x3
+	dcache_by_line_op civac, sy, x0, x1, x2, x3, clean=0
 	ret
 ENDPIPROC(__dma_flush_area)
 
