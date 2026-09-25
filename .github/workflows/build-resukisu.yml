@@ -139,7 +139,13 @@ jobs:
           AK3
 
           mkdir -p $HOME/AnyKernel3/tmp
-          cp -f arch/arm64/boot/Image.gz $HOME/AnyKernel3/
+          # SDM845 Xiaomi needs the appended-dtb image (Image.gz-dtb); the separate
+          # Image.gz has no device tree, so flashing it leaves the kernel unchanged.
+          if [ -f arch/arm64/boot/Image.gz-dtb ]; then
+            cp -f arch/arm64/boot/Image.gz-dtb $HOME/AnyKernel3/Image.gz-dtb
+          elif [ -f arch/arm64/boot/Image.gz ]; then
+            cp -f arch/arm64/boot/Image.gz $HOME/AnyKernel3/Image.gz
+          fi
           # DTB if produced
           [ -f arch/arm64/boot/dtb ] && cp -f arch/arm64/boot/dtb $HOME/AnyKernel3/ || true
 
