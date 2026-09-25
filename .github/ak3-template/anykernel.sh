@@ -1,5 +1,5 @@
 ### AnyKernel3 Ramdisk Mod Script
-## ReBocchi (ReSukiSU v4.2.0-rc3-susfs) by RanggaWbp — Xiaomi SDM845
+## ReBocchi (ReSukiSU-susfs) by RanggaWbp — Xiaomi SDM845
 
 ### AnyKernel setup
 # global properties
@@ -30,7 +30,7 @@ set_perm_recursive 0 0 750 750 $RAMDISK/init* $RAMDISK/sbin;
 
 # boot shell variables
 BLOCK=auto;
-IS_SLOT_DEVICE=1;
+IS_SLOT_DEVICE=auto;
 RAMDISK_COMPRESSION=auto;
 PATCH_VBMETA_FLAG=auto;
 

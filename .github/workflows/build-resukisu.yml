@@ -150,7 +150,7 @@ jobs:
           [ -f arch/arm64/boot/dtb ] && cp -f arch/arm64/boot/dtb $HOME/AnyKernel3/ || true
 
           # stamp kernel.string + device names into properties()
-          sed -i "s|__AK3_KERNEL_STRING__|$AK3_KERNEL (ReSukiSU v4.2.0-rc3-susfs) by RanggaWbp|" $HOME/AnyKernel3/anykernel.sh
+          sed -i "s|__AK3_KERNEL_STRING__|$AK3_KERNEL (ReSukiSU-susfs) by RanggaWbp|" $HOME/AnyKernel3/anykernel.sh
           sed -i "s|__AK3_DEVICE1__|$AK3_DEVICE|" $HOME/AnyKernel3/anykernel.sh
           sed -i "s|__AK3_DEVICE2__|$AK3_MODEL|" $HOME/AnyKernel3/anykernel.sh
 
@@ -182,17 +182,12 @@ jobs:
 
       - name: Set release tag
         id: date
-        # Include a build counter so a same-day rebuild never clobbers the
-        # previous release (resukisu-25-09-2026, resukisu-25-09-2026-r2, ...).
-        # gh CLI is absent on the runner, so probe the REST API instead.
+        # Unique tag per build: date + random 4-hex suffix. A rebuild never
+        # clobbers a previous release and no collision check is needed.
         run: |
-          BASE="resukisu-$(TZ=Asia/Jakarta date +'%d-%m-%Y')"
-          TAG="$BASE"
-          n=2
-          while curl -fsSL -o /dev/null "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG"; do
-            TAG="$BASE-r$n"; n=$((n+1))
-          done
-          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          DATE=$(TZ=Asia/Jakarta date +'%d-%m-%Y')
+          RAND=$(openssl rand -hex 2)
+          echo "TAG=resukisu-$DATE-$RAND" >> $GITHUB_OUTPUT
 
       - name: Verify all 6 zips present
         run: |
@@ -210,7 +205,7 @@ jobs:
           tag_name: ${{ steps.date.outputs.TAG }}
           name: ReSukiSU-susfs ${{ steps.date.outputs.TAG }} — ReBocchi SDM845 CAF
           body: |
-            ReSukiSU v4.2.0-rc3-susfs (SUSFS inline hook) + NoMount + Baseband-guard + Re:Kernel
+            ReSukiSU-susfs (SUSFS inline hook) + NoMount + Baseband-guard + Re:Kernel
             Kernel: Linux 4.9.337 (Xiaomi SDM845 CAF) — build by RanggaWbp
 
             Devices:
