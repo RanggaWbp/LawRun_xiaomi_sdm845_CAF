@@ -59,8 +59,10 @@ jobs:
           # kdrag0n/proton-clang is a continuously-updating *repo*, not release
           # assets. clang-13 is era-matched to this 4.9 CAF tree; llvmorg-19
           # breaks arm64 vdso asm and crypto inline asm.
+          # NOTE: not added to PATH — its bundled binutils/ld is too old for
+          # ubuntu-24.04's glibc (.relr.dyn). We call clang by absolute path
+          # and let CROSS_COMPILE supply the aarch64 binutils.
           git clone --depth 1 https://github.com/kdrag0n/proton-clang $HOME/clang
-          echo "$HOME/clang/bin" >> $GITHUB_PATH
 
       - name: Set up GCC (aarch64-linux-android-4.9)
         run: |
@@ -75,7 +77,9 @@ jobs:
       - name: Build kernel (${{ matrix.defconfig }})
         run: |
           export ARCH=$KERNEL_ARCH
-          export PATH=$HOME/gcc-64/bin:$HOME/clang/bin:$PATH
+          # Only gcc-4.9 binutils on PATH; clang is invoked by absolute path
+          # so its bundled (too old) ld is never picked up.
+          export PATH=$HOME/gcc-64/bin:$HOME/gcc-32/bin:/usr/bin:/bin:$PATH
 
           # CAF sdm845: CLANG_TRIPLE must be a GNU triple (see build.config.aarch64),
           # CROSS_COMPILE supplies the aarch64-linux-android-4.9 binutils.
@@ -83,7 +87,7 @@ jobs:
             ARCH=$KERNEL_ARCH \
             HOSTCC=gcc \
             HOSTCXX=g++ \
-            CC=clang \
+            CC=$HOME/clang/bin/clang \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
             CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
@@ -99,7 +103,7 @@ jobs:
             ARCH=$KERNEL_ARCH \
             HOSTCC=gcc \
             HOSTCXX=g++ \
-            CC=clang \
+            CC=$HOME/clang/bin/clang \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
             CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
