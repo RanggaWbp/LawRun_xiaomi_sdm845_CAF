@@ -1,0 +1,189 @@
+name: Build ReBocchi (ReSukiSU + SUSFS inline hook + NoMount + Baseband-guard + Re:Kernel)
+
+on:
+  push:
+    branches:
+      - integ/resukisu-susfs-rebocchi
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Toolchain (CAF sdm845 friendly: clang + aarch64-linux-android-4.9 for CROSS_COMPILE)
+  CLANG_SOURCE: "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/LLVM-19.1.7-Linux-X64.tar.xz"
+  GCC_64_SOURCE: "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9"
+  GCC_64_BRANCH: "android12L-release"
+  GCC_32_SOURCE: "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9"
+  GCC_32_BRANCH: "android12L-release"
+  AK3_SOURCE: "https://github.com/osm0sis/AnyKernel3.git"
+  KERNEL_ARCH: arm64
+
+jobs:
+  build:
+    name: ${{ matrix.device }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { device: beryllium, codename: beryllium }
+          - { device: dipper,    codename: dipper }
+          - { device: equuleus,  codename: equuleus }
+          - { device: perseus,   codename: perseus }
+          - { device: polaris,   codename: polaris }
+          - { device: ursa,      codename: ursa }
+
+    steps:
+      - name: Checkout kernel source (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache cpio curl flex \
+            git libelf-dev libncurses-dev libssl-dev lld lz4 python3 unzip wget zip \
+            zlib1g-dev zstd
+          sudo ln -sf /usr/bin/python3 /usr/bin/python
+
+      - name: Set up clang
+        run: |
+          mkdir -p $HOME/clang
+          wget -qO- "$CLANG_SOURCE" | tar -xJ -C $HOME/clang --strip-components=1
+          echo "$HOME/clang/bin" >> $GITHUB_PATH
+
+      - name: Set up GCC (aarch64-linux-android-4.9)
+        run: |
+          git clone --depth=1 -b "$GCC_64_BRANCH" "$GCC_64_SOURCE" $HOME/gcc-64
+          git clone --depth=1 -b "$GCC_32_BRANCH" "$GCC_32_SOURCE" $HOME/gcc-32
+
+      - name: Prepare build
+        run: |
+          echo "KERNEL_NAME=ReBocchi" >> $GITHUB_ENV
+          echo "MAKE_FLAGS=-j$(nproc)" >> $GITHUB_ENV
+
+      - name: Build kernel (${{ matrix.defconfig }})
+        run: |
+          export ARCH=$KERNEL_ARCH
+          export CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android-
+          export CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi-
+          export CC=clang
+          export LLVM_AR=llvm-ar LLVM_NM=llvm-nm LLVM_OBJCOPY=llvm-objcopy LLVM_OBJDUMP=llvm-objdump LLVM_READELF=llvm-readelf LLVM_STRIP=llvm-strip
+          # CAF sdm845 needs the androidkernel gcc binutils (recordmcount etc. handled by clang)
+          export PATH=$HOME/gcc-64/bin:$HOME/clang/bin:$PATH
+
+          make $MAKE_FLAGS \
+            ARCH=$KERNEL_ARCH \
+            CC=clang \
+            CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
+            CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
+            ${{ matrix.defconfig }}
+
+          # Sanity: kernel-side integration must resolve
+          grep -q "CONFIG_KSU_SUSFS=y" .config || { echo "KSU_SUSFS missing from .config"; exit 1; }
+          grep -q "CONFIG_NOMOUNT=y"   .config || { echo "NOMOUNT missing from .config"; exit 1; }
+          grep -q "CONFIG_BBG=y"       .config || { echo "BBG missing from .config"; exit 1; }
+          grep -q "CONFIG_REKERNEL=y"  .config || { echo "REKERNEL missing from .config"; exit 1; }
+
+          make $MAKE_FLAGS \
+            ARCH=$KERNEL_ARCH \
+            CC=clang \
+            CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
+            CROSS_COMPILE_ARM32=$HOME/gcc-32/bin/arm-linux-androideabi- \
+            KCFLAGS="-w" 2>&1 | tee build.log
+
+          # Any build failure must abort the whole run
+          grep -E "Error [0-9]+|error:|fatal error" build.log && exit 1 || true
+          ls -la arch/arm64/boot/Image.gz arch/arm64/boot/dtb 2>/dev/null || true
+
+      - name: Set release date
+        id: date
+        run: echo "DATE=$(TZ=Asia/Jakarta date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 "$AK3_SOURCE" $HOME/AnyKernel3
+          ZIP_NAME="${{ matrix.device }}-$(echo ${{ steps.date.outputs.DATE }} | tr -d '-').zip"
+
+          # AnyKernel3 config for sdm845 A/B devices
+          cat > $HOME/AnyKernel3/anykernel.sh <<'AK3'
+          kernel.string=ReBocchi sdm845
+          do.modules=0
+          do.systemless=0
+          do.cleanup=1
+          block=auto
+          is_slot_device=1
+          AK3
+
+          mkdir -p $HOME/AnyKernel3/tmp
+          cp -f arch/arm64/boot/Image.gz $HOME/AnyKernel3/
+          # DTB if produced
+          [ -f arch/arm64/boot/dtb ] && cp -f arch/arm64/boot/dtb $HOME/AnyKernel3/ || true
+
+          cd $HOME/AnyKernel3
+          zip -r9 "$GITHUB_WORKSPACE/$ZIP_NAME" . -x '*.git*' -x 'README*' || \
+            7z a -tzip "$GITHUB_WORKSPACE/$ZIP_NAME" . -r -x'!.git*' '!README*'
+          echo "ZIP=$ZIP_NAME" >> $GITHUB_ENV
+          ls -la "$GITHUB_WORKSPACE/$ZIP_NAME"
+
+      - name: Upload zip (inter-job transfer only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zip-${{ matrix.device }}
+          path: ${{ github.workspace }}/*.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create single GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    if: always() && needs.build.result == 'success'
+    steps:
+      - name: Download all zips
+        uses: actions/download-artifact@v4
+        with:
+          pattern: zip-*
+          merge-multiple: true
+
+      - name: Set release tag
+        id: date
+        run: echo "TAG=resukisu-$(TZ=Asia/Jakarta date +'%d-%m-%Y')" >> $GITHUB_OUTPUT
+
+      - name: Verify all 6 zips present
+        run: |
+          ls -la *.zip
+          count=$(ls -1 *.zip | wc -l)
+          if [ "$count" -ne 6 ]; then echo "Expected 6 zips, got $count"; exit 1; fi
+          for d in beryllium dipper equuleus perseus polaris ursa; do
+            ls ${d}-*.zip >/dev/null 2>&1 || { echo "Missing zip for $d"; exit 1; }
+          done
+          echo "All 6 device zips present."
+
+      - name: Create Release and upload all assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.date.outputs.TAG }}
+          name: ReBocchi SDM845 CAF - ${{ steps.date.outputs.TAG }}
+          body: |
+            ReSukiSU v4.2.0-rc3 (SUSFS inline hook) + NoMount + Baseband-guard + Re:Kernel
+            Kernel: Linux 4.9.337 (Xiaomi SDM845 CAF)
+
+            Devices:
+            - beryllium (Poco F1)
+            - dipper (Mi 8)
+            - equuleus (Mi 8 Lite)
+            - perseus (Mi Max 3)
+            - polaris (Mi MIX 2S)
+            - ursa (Mi 8 Pro)
+
+            Filename format: <device>-<DDMMYYYY>.zip
+          files: |
+            *.zip
+          make_latest: true
