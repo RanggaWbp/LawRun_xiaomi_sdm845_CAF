@@ -175,7 +175,7 @@ retry:
 
 	if (static_branch_likely(&ksu_su_compat_enabled)) {
 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
-			ksu_handle_stat(&dfd, &fname, &flags);
+			ksu_handle_stat(&dfd, &fname, &flag);
 	}
 
 orig_flow:

@@ -32,6 +32,10 @@ struct kstat {
 	struct timespec	ctime;
 	unsigned long	blksize;
 	unsigned long long	blocks;
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	/* SUSFS carries its spoof state here; kernel 4.9 has no statx field. */
+	u32		result_mask;
+#endif
 };
 
 #endif
