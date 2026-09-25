@@ -526,7 +526,26 @@ endif
 ifneq ($(GCC_TOOLCHAIN),)
 CLANG_FLAGS	+= --gcc-toolchain=$(GCC_TOOLCHAIN)
 endif
-CLANG_FLAGS	+= -no-integrated-as
+# clang >= 15 emits .loc/.file debug directives that the CAF-bundled GNU as cannot parse,
+# so use clang's integrated assembler instead (the stock CAF tree built with clang-4xx era).
+CLANG_FLAGS	+= -integrated-as
+# CAF builds predate modern clang; silence the new warnings it emits on
+# this legacy tree (the toolchain only ever produced noise here).
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-unused-but-set-variable)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-unused-const-variable)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-misleading-indentation)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-null-pointer-arithmetic)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-bool-operation)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-initializer-overrides)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-tautological-constant-out-of-range-compare)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-format-truncation)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-stringop-truncation)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-implicit-function-declaration)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-int-conversion)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-dangling-pointer)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-single-bit-bitfield-constant-conversion)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-bitwise-instead-of-logical)
+KBUILD_CFLAGS	+= $(call cc-option,-Wno-unused-command-line-argument)
 CLANG_FLAGS	+= -Werror=unknown-warning-option
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 KBUILD_AFLAGS	+= $(CLANG_FLAGS)
