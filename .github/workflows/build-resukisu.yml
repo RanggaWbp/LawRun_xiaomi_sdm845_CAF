@@ -81,6 +81,8 @@ jobs:
           # CROSS_COMPILE supplies the aarch64-linux-android-4.9 binutils.
           make $MAKE_FLAGS \
             ARCH=$KERNEL_ARCH \
+            HOSTCC=gcc \
+            HOSTCXX=g++ \
             CC=clang \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
@@ -95,6 +97,8 @@ jobs:
 
           make $MAKE_FLAGS \
             ARCH=$KERNEL_ARCH \
+            HOSTCC=gcc \
+            HOSTCXX=g++ \
             CC=clang \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=$HOME/gcc-64/bin/aarch64-linux-android- \
