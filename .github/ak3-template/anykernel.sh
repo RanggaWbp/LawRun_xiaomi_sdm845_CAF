@@ -50,5 +50,12 @@ if [ ! -e $RAMDISK/dev/console ]; then
   mknod -m 660 $RAMDISK/dev/tty c 5 0;
 fi;
 
+# init's SetStdio() writes to /dev/kmsg; without the node the first-stage
+# switch_root/exec error is silently lost, so always ensure it exists.
+if [ ! -e $RAMDISK/dev/kmsg ]; then
+  mkdir -p $RAMDISK/dev;
+  mknod -m 600 $RAMDISK/dev/kmsg c 1 11;
+fi;
+
 write_boot;
 ## end boot install
