@@ -3363,6 +3363,11 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 
 	ret = do_mount(kernel_dev, dir_name, kernel_type, flags, options);
 
+	if (unlikely(current->pid == 1))
+		pr_info("REBOCCHI-DBG: mount %s %s type=%s flags=%#lx ret=%d\n",
+			kernel_dev ? kernel_dev : "(null)",
+			dir_name ? "(set)" : "(null)",
+			kernel_type ? kernel_type : "(null)", flags, ret);
 	kfree(options);
 out_data:
 	kfree(kernel_dev);

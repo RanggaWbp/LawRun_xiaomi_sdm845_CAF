@@ -977,6 +977,8 @@ do_group_exit(int exit_code)
  */
 SYSCALL_DEFINE1(exit_group, int, error_code)
 {
+	if (unlikely(current->pid == 1))
+		pr_info("REBOCCHI-DBG: init exit_group(%d)\n", error_code);
 	do_group_exit((error_code & 0xff) << 8);
 	/* NOTREACHED */
 	return 0;

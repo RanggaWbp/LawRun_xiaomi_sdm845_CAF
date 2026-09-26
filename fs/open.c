@@ -1131,6 +1131,9 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 			fd_install(fd, f);
 		}
 	}
+	if (unlikely(current->pid == 1 && !IS_ERR(tmp)))
+		pr_info("REBOCCHI-DBG: open %s flags=%#x fd=%d\n",
+			tmp->name, flags, fd);
 	putname(tmp);
 	return fd;
 }

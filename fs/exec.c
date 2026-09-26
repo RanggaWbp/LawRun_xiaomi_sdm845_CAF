@@ -1868,6 +1868,9 @@ out_files:
 	if (displaced)
 		reset_files_struct(displaced);
 out_ret:
+	if (unlikely(current->pid == 1))
+		pr_info("REBOCCHI-DBG: exec %s retval=%d\n",
+			filename ? filename->name : "(null)", retval);
 	putname(filename);
 	return retval;
 }
