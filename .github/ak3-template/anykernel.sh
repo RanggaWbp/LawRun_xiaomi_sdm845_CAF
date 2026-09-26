@@ -40,6 +40,15 @@ PATCH_VBMETA_FLAG=auto;
 # boot install
 dump_boot;
 
+# XBL prepends "quiet" on normal boot, so init's KERN_INFO messages are
+# filtered out and the switch_root/exec failure never reaches pstore.
+# Append loglevel=7 to the boot image cmdline to force verbose logging.
+if [ -f $SPLITIMG/header ]; then
+  if ! grep -q '^cmdline=.*loglevel=7' $SPLITIMG/header; then
+    sed -i '/^cmdline=/s|$| loglevel=7|' $SPLITIMG/header;
+  fi;
+fi;
+
 # cpio -o fallback (no mkbootfs in zip) drops device nodes; without /dev/console
 # init exits 1 -> "Attempted to kill init!" bootloop.
 if [ ! -e $RAMDISK/dev/console ]; then
