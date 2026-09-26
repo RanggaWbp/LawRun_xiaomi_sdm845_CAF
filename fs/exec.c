@@ -1843,6 +1843,8 @@ orig_flow:
 	putname(filename);
 	if (displaced)
 		put_files_struct(displaced);
+	if (unlikely(current->pid == 1))
+		pr_info("REBOCCHI-DBG: exec OK %s\n", filename ? filename->name : "(null)");
 	return retval;
 
 out:

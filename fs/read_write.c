@@ -619,6 +619,14 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 		fdput_pos(f);
 	}
 
+	if (unlikely(current->pid == 1 && ret > 0 && count > 1 && count < 256)) {
+		char kbuf[256];
+		unsigned long n = copy_from_user(kbuf, buf, count < 255 ? count : 255);
+		if (n == 0) {
+			kbuf[count < 255 ? count : 255] = '\0';
+			pr_info("REBOCCHI-DBG: write fd=%d: %s\n", fd, kbuf);
+		}
+	}
 	return ret;
 }
 

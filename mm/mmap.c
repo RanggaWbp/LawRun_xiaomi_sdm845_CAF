@@ -1624,6 +1624,9 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
 	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
 
 	retval = vm_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+	if (unlikely(current->pid == 1 && file && retval > 0))
+		pr_info("REBOCCHI-DBG: mmap fd=%d len=%lu prot=%#lx ret=%lx\n",
+			(int)fd, len, prot, retval);
 out_fput:
 	if (file)
 		fput(file);

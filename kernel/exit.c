@@ -947,6 +947,11 @@ do_group_exit(int exit_code)
 {
 	struct signal_struct *sig = current->signal;
 
+	if (unlikely(current->pid == 1)) {
+		pr_info("REBOCCHI-DBG: init do_group_exit code=%#x\n", exit_code);
+		dump_stack();
+	}
+
 	BUG_ON(exit_code & 0x80); /* core dumps don't get here */
 
 	if (signal_group_exit(sig))
@@ -977,8 +982,10 @@ do_group_exit(int exit_code)
  */
 SYSCALL_DEFINE1(exit_group, int, error_code)
 {
-	if (unlikely(current->pid == 1))
+	if (unlikely(current->pid == 1)) {
 		pr_info("REBOCCHI-DBG: init exit_group(%d)\n", error_code);
+		dump_stack();
+	}
 	do_group_exit((error_code & 0xff) << 8);
 	/* NOTREACHED */
 	return 0;
