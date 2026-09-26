@@ -477,24 +477,28 @@ static void limits_isens_vref_ldo_init(struct platform_device *pdev,
 	if (ret) {
 		pr_err("Regulator:isens_vref settings read error:%d\n",
 				ret);
-		devm_regulator_put(hw->isens_reg);
+		/* devm_regulator_get is auto-released on unbind; calling
+		 * devm_regulator_put here double-frees and panics at probe */
 		return;
 	}
 	ret = regulator_set_voltage(hw->isens_reg, settings[0], settings[1]);
 	if (ret) {
 		pr_err("Regulator:isens_vref set voltage error:%d\n", ret);
-		devm_regulator_put(hw->isens_reg);
+		/* devm_regulator_get is auto-released on unbind; calling
+		 * devm_regulator_put here double-frees and panics at probe */
 		return;
 	}
 	ret = regulator_set_load(hw->isens_reg, settings[2]);
 	if (ret) {
 		pr_err("Regulator:isens_vref set load error:%d\n", ret);
-		devm_regulator_put(hw->isens_reg);
+		/* devm_regulator_get is auto-released on unbind; calling
+		 * devm_regulator_put here double-frees and panics at probe */
 		return;
 	}
 	if (regulator_enable(hw->isens_reg)) {
 		pr_err("Failed to enable regulator:isens_vref\n");
-		devm_regulator_put(hw->isens_reg);
+		/* devm_regulator_get is auto-released on unbind; calling
+		 * devm_regulator_put here double-frees and panics at probe */
 		return;
 	}
 }
