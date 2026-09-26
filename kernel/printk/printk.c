@@ -767,8 +767,9 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 			endp++;
 			len -= endp - line;
 			line = endp;
-			if (strstr(line, "healthd") || strncmp(line, "logd: Skipping", sizeof("logd: Skipping")))
-				goto ignore;
+			/* REBOCCHI-DBG: stock CAF filter drops every prefixed
+			 * userspace line unless it is literally "logd: Skipping".
+			 * Remove it so first-stage init logs reach the console. */
 		}
 	}
 
